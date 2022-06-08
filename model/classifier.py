@@ -24,17 +24,11 @@ class CatSpeciesClassifier(tf.keras.Model):
         super().__init__(name='CatSpecies_Classifier')
 
         self.preprocessing_layer = PreprocessingLayer()
+        self.vgg19.trainable = False
 
-        self.conv2d_16_3x3_1 = tf.keras.layers.Conv2D(filters=16, kernel_size=(3, 3), activation='relu')
-        self.conv2d_32_3x3_1 = tf.keras.layers.Conv2D(filters=32, kernel_size=(3, 3), activation='relu')
-        self.conv2d_32_3x3_2 = tf.keras.layers.Conv2D(filters=32, kernel_size=(3, 3), activation='relu')
-        self.conv2d_64_3x3_1 = tf.keras.layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu')
-        self.conv2d_64_3x3_2 = tf.keras.layers.Conv2D(filters=64, kernel_size=(3, 3), activation='relu')
-        self.conv2d_64_5x5_1 = tf.keras.layers.Conv2D(filters=64, kernel_size=(5, 5), activation='relu')
-        self.maxpool2d_layer = tf.keras.layers.MaxPool2D(pool_size=(2, 2))
-        self.resnet = tf.keras.applications.VGG19(weights='imagenet', include_top=False)
-
-        self.resnet.trainable = False
+        # Create the intermediate model
+        self.vgg19_double_out = tf.keras.Model(inputs=[self.vgg19.inputs],
+                                               outputs=[self.vgg19.get_layer(index=-2).output, self.vgg19.output])
 
         self.gap_layer = tf.keras.layers.GlobalAveragePooling2D()
         self.dense_layer = tf.keras.layers.Dense(units=256, activation='relu')
@@ -44,18 +38,27 @@ class CatSpeciesClassifier(tf.keras.Model):
         # Preprocessing
         x = self.preprocessing_layer(inputs, training=training)
         # Convolutional Network
-
-        # x = self.conv2d_16_3x3_1(x) # 128x128x3 -> 126x126x16
-        # x = self.conv2d_32_3x3_1(x) # 126x126x16 -> 124x124x32
-        # x = self.maxpool2d_layer(x) # 124x124x32 -> 62x62x32
-        # x = self.conv2d_32_3x3_2(x) # 62x62x32 -> 60x60x32
-        # x = self.conv2d_64_3x3_1(x) # 60x60x32 -> 58x58x64
-        # x = self.maxpool2d_layer(x) # 58x58x64 -> 29x29x64
-        # x = self.conv2d_64_3x3_2(x) # 29x29x64 -> 27x27x64
-        # x = self.conv2d_64_5x5_1(x) # 27x27x64 -> 23x23x64
-        # x = self.maxpool2d_layer(x) # 23x23x64 -> 11x11x64
-        x = self.resnet(x, training=training)
+        last_conv_out, x = self.vgg19_double_out(x, training=training)
         # Prediction Network
         x = self.gap_layer(x)  # 11x11x64 -> 1x1x64
         x = self.dense_layer(x)
-        return self.prediction_layer(x)
+        return self.prediction_layer(x), last_conv_out
+
+    def train_step(self, data):
+        x, y = data
+        with tf.GradientTape() as tape:
+            y_pred, _ = self(x, training=True)
+            loss = self.compiled_loss(y, y_pred)
+        trainable_vars = self.trainable_variables
+        gradients = tape.gradient(loss, trainable_vars)
+
+        self.optimizer.apply_gradients(zip(gradients, trainable_vars))
+        self.compiled_metrics.update_state(y, y_pred)
+        return {m.name: m.result() for m in self.metrics}
+
+    def test_step(self, data):
+        x, y = data
+        y_pred, _ = self(x, training=False)
+        loss = self.compiled_loss(y, y_pred)
+        self.compiled_metrics.update_state(y, y_pred)
+        return {m.name: m.result() for m in self.metrics}
