@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import os
 from configs import *
+import logging
 
 # Read and process images for creating the datasets
 
@@ -10,11 +11,13 @@ preprocessed_images = []
 filenames = []
 labels = []
 
+logger = logging.getLogger('DatasetFactory')
 
 def preprocess_dataset(directory: str):
+    logger.info(f'Starting process from {directory}')
     for (root, dirs, files) in os.walk(directory):
         for file in files:
-            img_path = os.path.join(root, file)
+            img_path = os.path.join(root, file).replace('\\', '/')
             filenames.append(img_path)
             preprocessed_images.append(decode_image(img_path))
             labels.append(retrieve_label(img_path))

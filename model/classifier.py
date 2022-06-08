@@ -1,6 +1,5 @@
 import tensorflow as tf
 
-
 class PreprocessingLayer(tf.keras.layers.Layer):
 
     def __init__(self):
@@ -24,6 +23,7 @@ class CatSpeciesClassifier(tf.keras.Model):
         super().__init__(name='CatSpecies_Classifier')
 
         self.preprocessing_layer = PreprocessingLayer()
+        self.vgg19 = tf.keras.applications.VGG19(weights='imagenet', include_top=False)
         self.vgg19.trainable = False
 
         # Create the intermediate model

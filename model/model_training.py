@@ -1,4 +1,4 @@
-from classifier import CatSpeciesClassifier
+from .classifier import CatSpeciesClassifier
 from configs import *
 import tensorflow as tf
 from typing import Tuple
