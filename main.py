@@ -1,13 +1,16 @@
 from model.model_training import train_model, prepare_model
+from model.load_model import load_model
 from data.datasets import preprocess_dataset, preprocessed_images, labels, build_dataset
 from sklearn.model_selection import train_test_split
 from configs import *
+from tensorflow import keras
 import matplotlib.cm as cm
 
 
 # General configurations
 SAVE_MODEL = True
 TRAIN_MODEL = False
+SAVING_PATH = 'model/model_savings'
 
 if __name__ == '__main__':
     # Prepare the datasets for training and validation
@@ -32,9 +35,14 @@ if __name__ == '__main__':
     cat_species_classifier = prepare_model()
 
     # Train the model
-    cat_species_classifier, history = train_model(cat_species_classifier, train_ds, valid_ds, SPE_TRAIN, SPE_VALID)
-    if SAVE_MODEL:
-        cat_species_classifier.save('model_saving', save_format='tf')
+    if TRAIN_MODEL:
+        cat_species_classifier, history = train_model(cat_species_classifier, train_ds, valid_ds, SPE_TRAIN, SPE_VALID)
+        if SAVE_MODEL:
+            cat_species_classifier.save(SAVING_PATH, save_format='tf')
+    else:
+        cat_species_classifier = load_model(SAVING_PATH)
+
+
 
 
 
