@@ -1,14 +1,19 @@
 from model.model_training import train_model, prepare_model
 from model.load_model import load_model
+from cam.cam_utils import perform_cam
 from data.datasets import preprocess_dataset, preprocessed_images, labels, build_dataset
 from sklearn.model_selection import train_test_split
 from configs import *
 import logging, os
+import tensorflow as tf
+from PIL import Image
+
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # General configurations
-SAVE_MODEL = True
-TRAIN_MODEL = False
+SAVE_MODEL = False
+TRAIN_MODEL = True
 SAVING_PATH = 'model/model_savings'
 
 logging.basicConfig(level=logging.INFO,
@@ -50,6 +55,24 @@ if __name__ == '__main__':
         logger.info('Attempting to load model...')
         cat_species_classifier = load_model(SAVING_PATH)
         logger.info('Model loaded')
+
+
+    # Test and visualize the cam model
+    class_type = 'Lion'
+    number = 39
+    test_img = f'./data/Felidae/{class_type}/{class_type}_{number:03d}.jpg'
+
+    logger.info(f'Testing image {test_img}')
+    perform_cam(test_img, cat_species_classifier, class_type)
+
+    # Visualize the GradCAM algorithm result
+
+
+
+
+
+
+
 
 
 

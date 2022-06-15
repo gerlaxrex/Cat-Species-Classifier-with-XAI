@@ -26,7 +26,7 @@ def train_model(model: tf.keras.Model,
                 spe_train: int,
                 spe_valid: int) -> Tuple[tf.keras.Model, tf.keras.callbacks.History]:
     # Define the possible callbacks
-    callbacks = [tf.keras.callbacks.EarlyStopping(patience=4, restore_best_weights=True)]
+    callbacks = [tf.keras.callbacks.EarlyStopping(patience=2, restore_best_weights=True)]
     # Fit the model
     history = model.fit(train_ds,
                         epochs=EPOCHS,
