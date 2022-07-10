@@ -1,7 +1,7 @@
 from model.model_training import train_model, prepare_model
 from model.load_model import load_model
 from cam.cam_utils import perform_cam
-from data.datasets import preprocess_dataset, preprocessed_images, labels, build_dataset
+from data.datasets import preprocess_dataset, preprocessed_images, labels, build_dataset, split_train_valid_datasets
 from sklearn.model_selection import train_test_split
 from configs import *
 import logging, os
@@ -32,6 +32,10 @@ if __name__ == '__main__':
                                                                                   labels,
                                                                                   train_size=0.8,
                                                                                   stratify=labels)
+
+        # Alternative train_validation splitting
+        # total_ds = tf.data.Dataset.from_tensor_slices((preprocessed_images, labels))
+        # train_ds, train_size, valid_ds, valid_size = split_train_valid_datasets(total_ds, labels, train_size=0.8)
 
         # Build the datasets
         train_ds, train_size = build_dataset(train_images, train_labels, TRAIN_BS)

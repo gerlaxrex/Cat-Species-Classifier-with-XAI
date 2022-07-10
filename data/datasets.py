@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+from sklearn.model_selection import train_test_split
 from PIL import Image
 import os
 from configs import *
@@ -64,3 +65,38 @@ def build_dataset(images, labels=None, batch_size=100, shuffle=True, prefetch_si
         tot_ds = tot_ds.shuffle(total_size)
     tot_ds = tot_ds.batch(batch_size).prefetch(prefetch_size)
     return tot_ds, total_size
+
+
+def split_train_valid_datasets(ds, labels, train_size=0.8):
+    """Function for creating a train_test split with tensorflow.
+    The function performs three main steps:
+        - Creates an indexed array to be splitted with the sklearn.preprocessing function 'train_test_split'
+          with the stratification based on the labels.
+        - Then uses the '.enumerate()' functionality over a tensorflow Dataset
+        - Then uses a '.filter()' function in order to select ONLY the indexes contained in the train OR validation split
+        - Then uses a map in order to remove the index created by the '.enumerate()' function.
+    """
+    X_indexes = np.array(list(range(len(labels))))
+    X_train, y_train, X_valid, y_valid = train_test_split(X_indexes,
+                                                          labels,
+                                                          stratify=labels,
+                                                          shuffle=True,
+                                                          train_size=train_size)
+
+    def select_index_train(el):
+        return tf.math.reduce_any(el[0] == X_train)
+
+    def select_index_valid(el):
+        return tf.math.reduce_any(el[0] == X_train)
+
+    def remove_index(el):
+        return el[1]
+    logger.info(f'Generating training dataset...')
+    train_ds = ds.enumerate().filter(select_index_train).map(remove_index)
+    logger.info(f'Generated training dataset!')
+
+    logger.info(f'Generating validation dataset...')
+    valid_ds = ds.enumerate().filter(select_index_valid).map(remove_index)
+    logger.info(f'Generated validation dataset!')
+
+    return (train_ds, len(X_train)), (valid_ds, len(X_valid))
