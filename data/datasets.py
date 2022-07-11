@@ -1,10 +1,12 @@
-import tensorflow as tf
-import numpy as np
-from sklearn.model_selection import train_test_split
-from PIL import Image
-import os
-from configs import *
 import logging
+import os
+
+import numpy as np
+import tensorflow as tf
+from PIL import Image
+from sklearn.model_selection import train_test_split
+
+from configs import *
 
 # Read and process images for creating the datasets
 
@@ -13,6 +15,7 @@ filenames = []
 labels = []
 
 logger = logging.getLogger('DatasetFactory')
+
 
 def preprocess_dataset(directory: str):
     logger.info(f'Starting process from {directory}')
@@ -49,12 +52,14 @@ def process_label(img_path):
     return tf.argmax(one_hot)
 
 
-def build_dataset(images, labels=None, batch_size=100, shuffle=True, prefetch_size=1):
+def build_dataset(images, labels=None, batch_size=100, shuffle=True, prefetch_size=1, seed=None):
     """Build a dataset with the labels (if present), shuffling, batching and prefetching"""
     # Build the single datasets
     if labels is None:
+        logger.info('Start creation of dataset (unsupervised)...')
         tot_ds = tf.data.Dataset.from_tensor_slices(images)
     else:
+        logger.info('Start creation of dataset (supervised)...')
         tot_ds = tf.data.Dataset.from_tensor_slices((images, labels))
     # tot_ds = tot_ds.map(lambda x,l : (tf.py_function(process_image, [x], tf.uint8), l))
     # Transform into one and split in train/validation
@@ -62,12 +67,13 @@ def build_dataset(images, labels=None, batch_size=100, shuffle=True, prefetch_si
     # Shuffle, batch, optimize
     tot_ds = tot_ds.repeat()
     if shuffle:
-        tot_ds = tot_ds.shuffle(total_size)
+        tot_ds = tot_ds.shuffle(min(total_size, 1000), seed=seed)
     tot_ds = tot_ds.batch(batch_size).prefetch(prefetch_size)
+    logger.info(f'Created dataset with {total_size} samples.')
     return tot_ds, total_size
 
 
-def split_train_valid_datasets(ds, labels, train_size=0.8):
+def split_train_valid_datasets(ds, labels, train_size=0.8, seed=None):
     """Function for creating a train_test split with tensorflow.
     The function performs three main steps:
         - Creates an indexed array to be splitted with the sklearn.preprocessing function 'train_test_split'
@@ -81,7 +87,8 @@ def split_train_valid_datasets(ds, labels, train_size=0.8):
                                                           labels,
                                                           stratify=labels,
                                                           shuffle=True,
-                                                          train_size=train_size)
+                                                          train_size=train_size,
+                                                          random_state=seed)
 
     def select_index_train(el):
         return tf.math.reduce_any(el[0] == X_train)
