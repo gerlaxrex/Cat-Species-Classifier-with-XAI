@@ -1,10 +1,12 @@
-import tensorflow as tf
-import matplotlib.pyplot as plt
-from configs import IMG_SHAPE, CLASS_LIST
-import numpy as np
-import matplotlib.cm as cm
-from PIL import Image
 import logging
+
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from PIL import Image
+
+from configs import IMG_SHAPE, CLASS_LIST
 
 logger = logging.getLogger(__file__)
 

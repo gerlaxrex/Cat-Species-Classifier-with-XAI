@@ -1,7 +1,9 @@
-from .classifier import CatSpeciesClassifier
-from configs import *
-import tensorflow as tf
 from typing import Tuple
+
+import tensorflow as tf
+
+from configs import *
+from .classifier import CatSpeciesClassifier
 
 
 def prepare_model() -> tf.keras.Model:
